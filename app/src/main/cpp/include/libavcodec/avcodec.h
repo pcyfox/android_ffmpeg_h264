@@ -5289,6 +5289,7 @@ AVCodecParserContext *av_parser_init(int codec_id);
  *          decode_frame(data, size);
  *   }
  * @endcode
+ *   第一个参数：结构体AVCodecParserContext；第二个参数：结构体AVCodecContext；第三个参数：初始化后的packet.data；第四个参数：初始化后的packet.size；第五个参数：一次接收的数据包；第六个参数：接收数据包的长度；第七个参数：pts；第八个参数：dts；第九个参数：pos；
  */
 int av_parser_parse2(AVCodecParserContext *s,
                      AVCodecContext *avctx,

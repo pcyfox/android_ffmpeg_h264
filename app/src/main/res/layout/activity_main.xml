@@ -2,16 +2,33 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:gravity="clip_horizontal"
     android:orientation="vertical">
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:onClick="init"
-        android:text="读取一帧" />
+        android:onClick="test"
+        android:text="单帧h264文件测试" />
+
+    <Button
+        android:layout_marginTop="20dp"
+        android:textColor="@android:color/holo_red_dark"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="test2"
+        android:text="完整h264文件测试" />
+
+    <Button
+        android:layout_marginTop="20dp"
+        android:textColor="@android:color/holo_blue_bright"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="test3"
+        android:text="Test   3" />
 
     <SurfaceView
         android:id="@+id/surface"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="240dp" />
 </LinearLayout>

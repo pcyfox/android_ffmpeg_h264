@@ -17,7 +17,7 @@ public class JNIBridge {
      * @param den     码率 一秒多少帧
      * @return 0成功 -1:解码器没找到，-2解码器上下文分配失败 -3解码器打开失败 1: 已经注册过了
      */
-    public native static int init(Surface surface, int den);
+    public native static int init(Surface surface, int den,int w,int h);
 
     /**
      * 将h264数据 解码并且显示到初始化提供的Surface中
@@ -31,4 +31,8 @@ public class JNIBridge {
      * 释放资源
      */
     public native static void destory();
+
+
+    public native static void test(String path,Surface surface);
+
 }
