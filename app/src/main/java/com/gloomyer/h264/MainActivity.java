@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        JNIBridge.destory();
+        JNIBridge.destroy();
         super.onDestroy();
     }
 
@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                JNIBridge.init(surface.getHolder().getSurface(), 25, 0, 0);
+                JNIBridge.init(surface.getHolder().getSurface());
                 JNIBridge.test(file, surface.getHolder().getSurface());
             }
         }).start();
@@ -75,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
     private Runnable readAssetsFile = new Runnable() {
         @Override
         public void run() {
-            int initResult = JNIBridge.init(surface.getHolder().getSurface(), 25, 1280, 720);
+            int initResult = JNIBridge.init(surface.getHolder().getSurface());
             Log.d(TAG, "JNIBridge.init   initResult: " + initResult);
             boolean readFlag = true;
             int h264Count = 0;
@@ -142,7 +142,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void run() {
-            int initResult = JNIBridge.init(surface.getHolder().getSurface(), 25, 352, 268);
+            int initResult = JNIBridge.init(surface.getHolder().getSurface());
             Log.d(TAG, "onFrame   initResult: " + initResult);
             InputStream is = null;
             FileInputStream fileIS;
@@ -199,7 +199,11 @@ public class MainActivity extends AppCompatActivity {
                                     break;
                                 }
                             }
-
+                            try {
+                                Thread.sleep(100);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
                             onFrame(NalBuf);
                         }
                         NalBuf[0] = 0;
@@ -238,7 +242,7 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean onFrame(byte[] buf) {
         Log.d(TAG, "onFrame() called with: buf = [" + Arrays.toString(buf) + "]");
-        int ret = JNIBridge.decode(buf);
+        int ret = JNIBridge.decodeVideo(buf);
         Log.e(TAG, "JNIBridge.decode ret:" + ret);
 
         return true;

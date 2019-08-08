@@ -27,13 +27,17 @@ ANativeWindow *native_window = NULL;
 //AVFormatContext 视频格式上下文，视频流可以通过这个struct来获取。
 AVFormatContext *pAVFormatContext = NULL;
 
+//AVFrame用于存放解码后的数据
+AVFrame *yuv_frame = av_frame_alloc();
+AVFrame *rgb_frame = av_frame_alloc();
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_gloomyer_h264_jni_JNIBridge_init(JNIEnv *env, jclass type, jobject surface, jint den,
-                                          jint w, jint h) {
+Java_com_gloomyer_h264_jni_JNIBridge_init(JNIEnv *env, jclass type, jobject surface,
+                                          jint threadCount) {
     if (is_inited) return 1;
-    av_log_set_callback(callback_report);//设置输出FFmpeg到androidLog
+    //设置输出FFmpeg到androidLog
+    av_log_set_callback(callback_report);
 
     if (!_IS_REGISTER_ALL) {
         av_register_all();
@@ -51,24 +55,10 @@ Java_com_gloomyer_h264_jni_JNIBridge_init(JNIEnv *env, jclass type, jobject surf
     if (!pAVCodecContext) {
         return -2;
     }
-
-
-    pAVCodecContext->width = w;
-    pAVCodecContext->height = h;
-
-//    pAVCodecContext->time_base.num = 1;//时间基数
-//    pAVCodecContext->frame_number = 1;
-//  //  pAVCodecContext->thread_count=2;//解码线程数
+    pAVCodecContext->thread_count = threadCount;//解码线程数
     pAVCodecContext->codec_type = AVMEDIA_TYPE_VIDEO;
-//    pAVCodecContext->bit_rate = 0;
-    pAVCodecContext->time_base.den = den; //帧率
     pAVCodecContext->pix_fmt = AV_PIX_FMT_YUV420P;
-
-
-  //  pAVFormatContext->flags =pAVFormatContext->flags & AVFMT_FLAG_NOBUFFER;
-
-    // pAVCodecContext->flags|=CODEC_FLAG_TRUNCATED;
-//    pAVCodecContext->color_range = AVCOL_RANGE_MPEG;
+    //  pAVFormatContext->flags =pAVFormatContext->flags & AVFMT_FLAG_NOBUFFER;
 
     if (avcodec_open2(pAVCodecContext, h264_codec, 0) == 0) {
         native_window = ANativeWindow_fromSurface(env, surface);
@@ -76,11 +66,13 @@ Java_com_gloomyer_h264_jni_JNIBridge_init(JNIEnv *env, jclass type, jobject surf
         return 0;
     }
 
+    yuv_frame = av_frame_alloc();
+    rgb_frame = av_frame_alloc();
+
 
     return -3;
 }
 
-AVFrame *yuv_frame = av_frame_alloc();
 
 int decodec(AVPacket *avPacket) {
     int ret = -110;
@@ -89,22 +81,15 @@ int decodec(AVPacket *avPacket) {
     ret = avcodec_send_packet(pAVCodecContext, avPacket);
     av_log(NULL, AV_LOG_DEBUG, "------------>avcodec_send_packet resultCode::%d", ret);
 
-    // 格式转换关键类
-    // 构造函数传入的参数为 原视频的宽高、像素格式、目标的宽高这里也取原视频的宽高（可以修改参数）
-    // SWS_BICUBIC算法
-    SwsContext *swsContext = sws_getContext(pAVCodecContext->width, pAVCodecContext->height,
-                                            pAVCodecContext->pix_fmt,
-                                            pAVCodecContext->width, pAVCodecContext->height,
-                                            AV_PIX_FMT_RGBA, SWS_BICUBIC, NULL, NULL, NULL);
     if (ret == 0) {
-        //AVFrame用于存放解码后的数据
-        AVFrame *rgb_frame = av_frame_alloc();
+        av_frame_unref(yuv_frame);
+        av_frame_unref(rgb_frame);
         // dstFrame分配内存
         u_int8_t *out_buffer = (u_int8_t *) av_malloc(
                 static_cast<size_t>(av_image_get_buffer_size(AV_PIX_FMT_ARGB,
                                                              pAVCodecContext->width,
                                                              pAVCodecContext->height, 4)));
-        av_image_fill_arrays(rgb_frame->data, rgb_frame->linesize, out_buffer, AV_PIX_FMT_RGBA,
+        av_image_fill_arrays(rgb_frame->data, rgb_frame->linesize, out_buffer, AV_PIX_FMT_ARGB,
                              pAVCodecContext->width, pAVCodecContext->height, 1);
 
         ANativeWindow_Buffer window_buffer;
@@ -112,6 +97,20 @@ int decodec(AVPacket *avPacket) {
         ret = avcodec_receive_frame(pAVCodecContext, yuv_frame);
         av_log(NULL, AV_LOG_DEBUG, "<------------avcodec_receive_frame resultCode::%d", ret);
         if (ret == 0) {
+            if (yuv_frame->format !=  pAVCodecContext->pix_fmt) {
+                return -33;
+            }
+
+            av_log(NULL, AV_LOG_DEBUG, "<------------yuv_frame->pts----------------%lli", yuv_frame->pts);
+            av_log(NULL, AV_LOG_DEBUG, "<------------yuv_frame->pkt_dt--------------%lli", yuv_frame->pkt_dts);
+            // 格式转换关键类
+            // 构造函数传入的参数为 原视频的宽高、像素格式、目标的宽高这里也取原视频的宽高（可以修改参数）
+            // SWS_BICUBIC算法
+            SwsContext *swsContext = sws_getContext(pAVCodecContext->width, pAVCodecContext->height,
+                                                    pAVCodecContext->pix_fmt,
+                                                    pAVCodecContext->width, pAVCodecContext->height,
+                                                    AV_PIX_FMT_RGBA, SWS_BICUBIC, NULL, NULL, NULL);
+
             ANativeWindow_setBuffersGeometry(native_window, pAVCodecContext->width,
                                              pAVCodecContext->height, WINDOW_FORMAT_RGBA_8888);
             ANativeWindow_lock(native_window, &window_buffer, NULL);
@@ -153,7 +152,7 @@ int decodec(AVPacket *avPacket) {
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_gloomyer_h264_jni_JNIBridge_decode(JNIEnv *env, jclass type, jbyteArray h264buff_) {
+Java_com_gloomyer_h264_jni_JNIBridge_decodeVideo(JNIEnv *env, jclass type, jbyteArray h264buff_) {
     int ret = -110;
     jbyte *h264buff = env->GetByteArrayElements(h264buff_, 0);
     AVPacket *packet = av_packet_alloc();
@@ -168,14 +167,15 @@ Java_com_gloomyer_h264_jni_JNIBridge_decode(JNIEnv *env, jclass type, jbyteArray
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_gloomyer_h264_jni_JNIBridge_destory(JNIEnv *env, jclass type) {
+Java_com_gloomyer_h264_jni_JNIBridge_destroy(JNIEnv *env, jclass type) {
     if (!is_inited) return;
     ANativeWindow_release(native_window);
     // 清理并AVCodecContext空间
     // avcodec_free_context(reinterpret_cast<AVCodecContext **>(pAVCodecContext));
     avcodec_close(pAVCodecContext);
+    av_frame_free(&yuv_frame);
+    av_frame_free(&rgb_frame);
     is_inited = false;
-
 }
 
 
