@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.4.1)
 
-add_library(gcodec SHARED src/main/cpp/gcodec.cpp)
+add_library(gcodec SHARED src/main/cpp/AVCCodec.cpp)
 
-target_include_directories(gcodec PRIVATE ${CMAKE_SOURCE_DIR}/src/main/cpp/include) #头文件
+target_include_directories(gcodec PRIVATE ${CMAKE_SOURCE_DIR}/src/main/cpp/include)
 
 add_library(ffmpeg SHARED IMPORTED)
 set_target_properties(ffmpeg PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/src/main/jniLibs/${CMAKE_ANDROID_ARCH_ABI}/libffmpeg.so)

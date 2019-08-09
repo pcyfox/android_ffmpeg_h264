@@ -1,4 +1,4 @@
-package com.gloomyer.h264;
+package com.qy.h264;
 
 import android.Manifest;
 import android.graphics.PixelFormat;
@@ -10,10 +10,9 @@ import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
 
-import com.gloomyer.h264.jni.JNIBridge;
+import com.qy.h264.jni.JNIBridge;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;

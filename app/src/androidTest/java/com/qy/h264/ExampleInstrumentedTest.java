@@ -1,4 +1,4 @@
-package com.gloomyer.h264;
+package com.qy.h264;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

@@ -1,12 +1,11 @@
-package com.gloomyer.h264;
-
-import android.util.Log;
+package com.qy.h264;
 
 /**
  * Created by Administrator on 2015/4/28.
  */
 
 public class H264Utils {
+
     public static byte[] makePackage(byte[] byInput) {
         byte[] byOutput ;
         if (byInput[0] != 0x17 && byInput[0] != 0x27 ) {

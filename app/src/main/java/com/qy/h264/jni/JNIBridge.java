@@ -1,7 +1,6 @@
-package com.gloomyer.h264.jni;
+package com.qy.h264.jni;
 
 import android.view.Surface;
-import android.view.SurfaceView;
 
 public class JNIBridge {
     static {
@@ -19,7 +18,7 @@ public class JNIBridge {
     public native static int init(Surface surface, int threadCount);
 
     public static int init(Surface surface) {
-      return   init(surface, 8);
+      return init(surface, 8);
     }
 
     /**
