@@ -62,9 +62,7 @@ public class H264Utils {
         outConfig[2] = 0;
         outConfig[3] = 1;
 
-        for (int i = 0; i < spsLength; i++) {
-            outConfig[4 + i] = sps[i];
-        }
+        System.arraycopy(sps, 0, outConfig, 4, spsLength);
 
         outConfig[4 + spsLength] = 0;
         outConfig[4 + spsLength + 1] = 0;

@@ -107,9 +107,9 @@ public class MainActivity extends AppCompatActivity {
                         byte[] spsppsBuffer = H264Utils.makeConfig(result);
                         byte[] mSpsPpsBuffer = new byte[spsppsBuffer.length];
                         System.arraycopy(spsppsBuffer, 0, mSpsPpsBuffer, 0, spsppsBuffer.length);
-                        H264Utils.H264Info h264Info =H264Utils.parseSpspps(mSpsPpsBuffer);
+                        H264Utils.H264Info h264Info = H264Utils.parseSpspps(mSpsPpsBuffer);
                         onFrame(spsppsBuffer);
-                       // Log.d(TAG, "readAssetsFile h264Info: "+h264Info);
+                        // Log.d(TAG, "readAssetsFile h264Info: "+h264Info);
                     }
 
                     byte[] byOutput = H264Utils.makePackage(result);
@@ -122,14 +122,14 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     onFrame(byOutput);
-                    Thread.sleep(600);
-                    is.close();
-                    outStream.close();
                     try {
-                        Thread.sleep(40);
+                        Thread.sleep(100);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
+                    is.close();
+                    outStream.close();
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -144,93 +144,92 @@ public class MainActivity extends AppCompatActivity {
         public void run() {
             int initResult = JNIBridge.init(surface.getHolder().getSurface());
             Log.d(TAG, "onFrame   initResult: " + initResult);
-            InputStream is = null;
-            FileInputStream fileIS;
-            int iTemp = 0;
+
+
             int nalLen;
 
-            boolean bFirst = true;
-            boolean bFindPPS = true;
+            boolean isFirst = true;
+            boolean isFindPPS = true;
 
-            int bytesRead = 0;
-            int NalBufUsed = 0;
-            int SockBufUsed;
+            int bytesReadCount;
+            int nalBufUsedCount = 0;
+            int tempBufUsedCount;
 
-            byte[] NalBuf = new byte[40980]; // 40k
-            byte[] SockBuf = new byte[2048];
+            byte[] nalBuf = new byte[40980]; // 40k
+            byte[] tempBuf = new byte[4096];
 
             try {
-                fileIS = new FileInputStream(file);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
+                FileInputStream fileInputStream = new FileInputStream(file);
+                while (!Thread.currentThread().isInterrupted()) {
+                    bytesReadCount = fileInputStream.read(tempBuf, 0, tempBuf.length);
+                    if (bytesReadCount <= 0)
+                        break;
+                    tempBufUsedCount = 0;
+                    while (bytesReadCount - tempBufUsedCount > 0) {
+                        nalLen = mergeBuffer(nalBuf, nalBufUsedCount, tempBuf, tempBufUsedCount, bytesReadCount - tempBufUsedCount);
+                        nalBufUsedCount += nalLen;
+                        tempBufUsedCount += nalLen;
+                        while (mTrans == 1) {
+                            mTrans = 0xFFFFFFFF;
+                            if (isFirst) {
+                                isFirst = false;
+                            } else {
+                                // a complete NAL data, include 0x00000001 trail
+                                //0x67 A&0x1f==7:sps
+                                //0x68 A&0x1f==8:pps
+                                //0x65 A&0x1f==5:关键帧
+                                // 【h264编码出的NALU规律】
+                                //第一帧 SPS【0 0 0 1 0x67】 PPS【0 0 0 1 0x68】 SEI【0 0 0 1 0x6】 IDR【0 0 0 1 0x65】
+                                // p帧   P【0 0 0 1 0x61】
+                                // I帧   SPS【0 0 0 1 0x67】 PPS【0 0 0 1 0x68】 IDR【0 0 0 1 0x65】
 
-            while (!Thread.currentThread().isInterrupted()) {
-                try {
-                    bytesRead = fileIS.read(SockBuf, 0, 2048);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                if (bytesRead <= 0)
-                    break;
-                SockBufUsed = 0;
-                while (bytesRead - SockBufUsed > 0) {
-                    nalLen = mergeBuffer(NalBuf, NalBufUsed, SockBuf, SockBufUsed, bytesRead - SockBufUsed);
-                    NalBufUsed += nalLen;
-                    SockBufUsed += nalLen;
-                    while (mTrans == 1) {
-                        mTrans = 0xFFFFFFFF;
-                        if (bFirst) {
-                            bFirst = false;
-                        }
-                        // a complete NAL data, include 0x00000001 trail.
-                        else {
-                            if (bFindPPS) {
-                                if ((NalBuf[4] & 0x1F) == 7) {
-                                    bFindPPS = false;
-                                } else {
-                                    NalBuf[0] = 0;
-                                    NalBuf[1] = 0;
-                                    NalBuf[2] = 0;
-                                    NalBuf[3] = 1;
-                                    NalBufUsed = 4;
-                                    break;
+                                if (isFindPPS) {
+                                    if ((nalBuf[4] & 0x1F) == 7) {
+                                        isFindPPS = false;
+                                    } else {
+                                        nalBuf[0] = 0;
+                                        nalBuf[1] = 0;
+                                        nalBuf[2] = 0;
+                                        nalBuf[3] = 1;
+                                        nalBufUsedCount = 4;
+                                        break;
+                                    }
                                 }
+                                try {
+                                    Thread.sleep(60);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                                onFrame(nalBuf);
                             }
-                            try {
-                                Thread.sleep(100);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            onFrame(NalBuf);
+                            nalBuf[0] = 0;
+                            nalBuf[1] = 0;
+                            nalBuf[2] = 0;
+                            nalBuf[3] = 1;
+                            nalBufUsedCount = 4;
                         }
-                        NalBuf[0] = 0;
-                        NalBuf[1] = 0;
-                        NalBuf[2] = 0;
-                        NalBuf[3] = 1;
-                        NalBufUsed = 4;
                     }
                 }
-            }
-            try {
-                fileIS.close();
+
+                fileInputStream.close();
+
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
+
         }
     };
 
-    int mergeBuffer(byte[] NalBuf, int NalBufUsed, byte[] SockBuf, int SockBufUsed, int SockRemain) {
-        int i;
-        byte Temp;
 
-        for (i = 0; i < SockRemain; i++) {
-            Temp = SockBuf[i + SockBufUsed];
-            NalBuf[i + NalBufUsed] = Temp;
+    int mergeBuffer(byte[] nalBuf, int nalBufUsedCount, byte[] tempBuf, int tempBufUsedCount, int remian) {
+        int i;
+        byte temp;
+        for (i = 0; i < remian; i++) {
+            temp = tempBuf[i + tempBufUsedCount];
+            nalBuf[i + nalBufUsedCount] = temp;
             mTrans <<= 8;
-            mTrans |= Temp;
+            mTrans |= temp;
             if (mTrans == 1) {
                 i++;
                 break;
