@@ -10,7 +10,7 @@ import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
 
-import com.qy.h264.jni.JNIBridge;
+import com.qy.h264.jni.AVCJniBridge;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        JNIBridge.destroy();
+        AVCJniBridge.destroy();
         super.onDestroy();
     }
 
@@ -57,8 +57,8 @@ public class MainActivity extends AppCompatActivity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                JNIBridge.init(surface.getHolder().getSurface());
-                JNIBridge.test(file, surface.getHolder().getSurface());
+                AVCJniBridge.init(surface.getHolder().getSurface());
+                AVCJniBridge.test(file, surface.getHolder().getSurface());
             }
         }).start();
     }
@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
     private Runnable readAssetsFile = new Runnable() {
         @Override
         public void run() {
-            int initResult = JNIBridge.init(surface.getHolder().getSurface());
+            int initResult = AVCJniBridge.init(surface.getHolder().getSurface());
             Log.d(TAG, "JNIBridge.init   initResult: " + initResult);
             boolean readFlag = true;
             int h264Count = 0;
@@ -141,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void run() {
-            int initResult = JNIBridge.init(surface.getHolder().getSurface());
+            int initResult = AVCJniBridge.init(surface.getHolder().getSurface());
             Log.d(TAG, "onFrame   initResult: " + initResult);
 
 
@@ -240,7 +240,7 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean onFrame(byte[] buf) {
         Log.d(TAG, "onFrame() called with: buf = [" + Arrays.toString(buf) + "]");
-        int ret = JNIBridge.decodeVideo(buf);
+        int ret = AVCJniBridge.decodeVideo(buf);
         Log.e(TAG, "JNIBridge.decode ret:" + ret);
 
         return true;

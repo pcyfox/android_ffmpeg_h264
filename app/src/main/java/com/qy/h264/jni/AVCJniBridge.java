@@ -2,7 +2,7 @@ package com.qy.h264.jni;
 
 import android.view.Surface;
 
-public class JNIBridge {
+public class AVCJniBridge {
     static {
         System.loadLibrary("ffmpeg");
         System.loadLibrary("gcodec");

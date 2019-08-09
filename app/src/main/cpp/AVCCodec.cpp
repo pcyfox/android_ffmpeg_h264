@@ -33,7 +33,7 @@ AVFrame *rgb_frame = av_frame_alloc();
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_qy_h264_jni_JNIBridge_init(JNIEnv *env, jclass type, jobject surface,
+Java_com_qy_h264_jni_AVCJniBridge_init__Landroid_view_Surface_2I(JNIEnv *env, jclass type, jobject surface,
                                           jint threadCount) {
     if (is_inited) return 1;
     //设置输出FFmpeg到androidLog
@@ -153,7 +153,7 @@ int decodec(AVPacket *avPacket) {
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_qy_h264_jni_JNIBridge_decodeVideo(JNIEnv *env, jclass type, jbyteArray h264buff_) {
+Java_com_qy_h264_jni_AVCJniBridge_decodeVideo(JNIEnv *env, jclass type, jbyteArray h264buff_) {
     int ret = -110;
     jbyte *h264buff = env->GetByteArrayElements(h264buff_, 0);
     AVPacket *packet = av_packet_alloc();
@@ -168,7 +168,7 @@ Java_com_qy_h264_jni_JNIBridge_decodeVideo(JNIEnv *env, jclass type, jbyteArray 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_qy_h264_jni_JNIBridge_destroy(JNIEnv *env, jclass type) {
+Java_com_qy_h264_jni_AVCJniBridge_destroy(JNIEnv *env, jclass type) {
     if (!is_inited) return;
     ANativeWindow_release(native_window);
     // 清理并AVCodecContext空间
@@ -182,7 +182,7 @@ Java_com_qy_h264_jni_JNIBridge_destroy(JNIEnv *env, jclass type) {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_qy_h264_jni_JNIBridge_test(JNIEnv *env, jclass type, jstring path_,
+Java_com_qy_h264_jni_AVCJniBridge_test(JNIEnv *env, jclass type, jstring path_,
                                           jobject surface) {
     const char *input = env->GetStringUTFChars(path_, 0);
     if (input == NULL) {
